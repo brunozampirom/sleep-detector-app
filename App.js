@@ -1,7 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  Dimensions,
+} from "react-native";
 import { Camera } from "expo-camera";
 import * as FaceDetector from "expo-face-detector";
+import AreaMarker from "./components/AreaMarker";
+import { Audio } from "expo-av";
+
+const alarm = require("./assets/audio/alarm-clock.mp3");
 
 export default function App() {
   const [hasPermission, setHasPermission] = useState(null);
@@ -17,9 +27,24 @@ export default function App() {
   const [fps, setFps] = useState(0);
   const [blinkCount, setBlicksCount] = useState(0);
   const [type, setType] = useState(Camera.Constants.Type.front);
+  const [sound, setSound] = useState(undefined);
 
   const openEyeSleep = 0.9;
   const openEyeSleepSeconds = 0.5;
+
+  const stopSound = async () => {
+    await sound.stopAsync();
+  };
+
+  const playSound = async () => {
+    console.log("Loading Sound");
+    if (sound === undefined) {
+      const { sound } = await Audio.Sound.createAsync(alarm);
+      setSound(sound);
+      sound.setIsLoopingAsync(true);
+      await sound.playAsync();
+    } else await sound.replayAsync();
+  };
 
   useEffect(() => {
     (async () => {
@@ -52,6 +77,7 @@ export default function App() {
       setCountDownSeconds(timer);
     } else if (timer - countDownSeconds >= openEyeSleepSeconds * fps) {
       setSleepDetected(true);
+      playSound();
     }
   };
 
@@ -59,13 +85,29 @@ export default function App() {
     setCountDownStarted(false);
     setSleepDetected(false);
     setCountDownSeconds(0);
+    stopSound();
+  };
+
+  const onAreaMarked = (bounds) => {
+    const origin = bounds?.origin;
+    const size = bounds?.size;
+    const left = origin.x;
+    const right = origin.x + size.width;
+    const top = origin.y;
+    const bottom = origin.y + size.height;
+    console.log(
+      `left: ${left.toFixed(2)} / right: ${right.toFixed(2)}\n
+      top: ${top.toFixed(2)} / bottom: ${bottom.toFixed(2)}`
+    );
+    return left > 10 && top > 250 && right < 400 && bottom < 650;
   };
 
   const handleFacesDetected = (props) => {
     setTimer((timer) => timer + 1);
-    if (props?.faces?.length > 0) {
+    if (props?.faces?.length > 0 && onAreaMarked(props.faces[0].bounds)) {
       setFaceDetected(true);
       const face = props.faces[0];
+      // console.log(face);
       setLeftEyeOpenProbability(face?.leftEyeOpenProbability);
       setRightEyeOpenProbabilityy(face?.rightEyeOpenProbability);
       if (
@@ -175,6 +217,7 @@ export default function App() {
             <Text style={styles.text}> Config </Text>
           </TouchableOpacity>
         </View>
+        <AreaMarker faceOnArea={faceDetected} />
       </Camera>
     </View>
   );
@@ -183,8 +226,10 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "white",
   },
   camera: {
+    marginTop: 25,
     flex: 1,
   },
   buttonContainer: {
@@ -200,7 +245,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   faceBox: {
-    marginTop: 25,
     position: "absolute",
     width: "100%",
     height: 180,
