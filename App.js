@@ -1,19 +1,15 @@
 import React, { useState, useEffect } from "react";
-import {
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-  Dimensions,
-} from "react-native";
+import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import { Camera } from "expo-camera";
 import * as FaceDetector from "expo-face-detector";
 import AreaMarker from "./components/AreaMarker";
 import { Audio } from "expo-av";
+import { StatusBar } from "expo-status-bar";
 
 const alarm = require("./assets/audio/alarm-clock.mp3");
 
 export default function App() {
+  const [camera, setCamera] = useState(null);
   const [hasPermission, setHasPermission] = useState(null);
   const [faceDetected, setFaceDetected] = useState(false);
   const [config, setConfig] = useState(true);
@@ -28,12 +24,11 @@ export default function App() {
   const [blinkCount, setBlicksCount] = useState(0);
   const [type, setType] = useState(Camera.Constants.Type.front);
   const [sound, setSound] = useState(undefined);
-
   const openEyeSleep = 0.9;
   const openEyeSleepSeconds = 0.5;
 
   const stopSound = async () => {
-    await sound.stopAsync();
+    if (sound) await sound.stopAsync();
   };
 
   const playSound = async () => {
@@ -95,10 +90,10 @@ export default function App() {
     const right = origin.x + size.width;
     const top = origin.y;
     const bottom = origin.y + size.height;
-    console.log(
-      `left: ${left.toFixed(2)} / right: ${right.toFixed(2)}\n
-      top: ${top.toFixed(2)} / bottom: ${bottom.toFixed(2)}`
-    );
+    // console.log(
+    //   `left: ${left.toFixed(2)} / right: ${right.toFixed(2)}\n
+    //   top: ${top.toFixed(2)} / bottom: ${bottom.toFixed(2)}`
+    // );
     return left > 10 && top > 250 && right < 400 && bottom < 650;
   };
 
@@ -111,7 +106,7 @@ export default function App() {
       setLeftEyeOpenProbability(face?.leftEyeOpenProbability);
       setRightEyeOpenProbabilityy(face?.rightEyeOpenProbability);
       if (
-        face?.leftEyeOpenProbability <= openEyeSleep ||
+        face?.leftEyeOpenProbability <= openEyeSleep &&
         face?.rightEyeOpenProbability <= openEyeSleep
       ) {
         if (!countDownStarted) setBlicksCount((blicksCount) => blicksCount + 1);
@@ -125,8 +120,10 @@ export default function App() {
     }
   };
 
+  // alert(`height: ${height}, width: ${width}`);
   return (
-    <View style={styles.container}>
+    <View style={{ ...styles.container }}>
+      <StatusBar hidden style="inverted" backgroundColor={"black"} />
       <Camera
         style={styles.camera}
         type={type}
@@ -139,6 +136,9 @@ export default function App() {
           runClassifications: FaceDetector.Constants.Classifications.all,
           minDetectionInterval: 100,
           tracking: true,
+        }}
+        ref={(ref) => {
+          setCamera(ref);
         }}
       >
         <View style={styles.faceBox}>
@@ -197,28 +197,28 @@ export default function App() {
             </View>
           )}
         </View>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => {
-              setType(
-                type === Camera.Constants.Type.back
-                  ? Camera.Constants.Type.front
-                  : Camera.Constants.Type.back
-              );
-            }}
-          >
-            <Text style={styles.text}> Flip </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => setConfig(!config)}
-          >
-            <Text style={styles.text}> Config </Text>
-          </TouchableOpacity>
-        </View>
         <AreaMarker faceOnArea={faceDetected} />
       </Camera>
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => {
+            setType(
+              type === Camera.Constants.Type.back
+                ? Camera.Constants.Type.front
+                : Camera.Constants.Type.back
+            );
+          }}
+        >
+          <Text style={styles.text}> Flip </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => setConfig(!config)}
+        >
+          <Text style={styles.text}> Config </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -226,22 +226,21 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "white",
+    backgroundColor: "black",
   },
   camera: {
-    marginTop: 25,
+    borderRadius: 30,
     flex: 1,
   },
   buttonContainer: {
-    flex: 1,
+    height: 55,
     backgroundColor: "transparent",
     flexDirection: "row",
     justifyContent: "space-between",
-    margin: 20,
+    alignItems: "center",
   },
   button: {
     flex: 0.3,
-    alignSelf: "flex-end",
     alignItems: "center",
   },
   faceBox: {
@@ -256,6 +255,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "center",
+    opacity: 0.8,
     height: 30,
   },
   faceInfoBox: {
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
     color: "white",
   },
   text: {
-    fontSize: 20,
+    fontSize: 17,
     textAlign: "center",
     color: "white",
   },
