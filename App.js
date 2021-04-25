@@ -9,23 +9,26 @@ import { StatusBar } from "expo-status-bar";
 const alarm = require("./assets/audio/alarm-clock.mp3");
 
 export default function App() {
-  const [camera, setCamera] = useState(null);
-  const [hasPermission, setHasPermission] = useState(null);
-  const [faceDetected, setFaceDetected] = useState(false);
-  const [config, setConfig] = useState(true);
-  const [leftEyeOpenProbability, setLeftEyeOpenProbability] = useState(0);
-  const [rightEyeOpenProbability, setRightEyeOpenProbabilityy] = useState(0);
-  const [sleepDetected, setSleepDetected] = useState(false);
-  const [countDownStarted, setCountDownStarted] = useState(false);
-  const [countDownSeconds, setCountDownSeconds] = useState(0);
-  const [timer, setTimer] = useState(0);
-  const [seconds, setSeconds] = useState(0);
-  const [fps, setFps] = useState(0);
-  const [blinkCount, setBlicksCount] = useState(0);
-  const [type, setType] = useState(Camera.Constants.Type.front);
-  const [sound, setSound] = useState(undefined);
+  const [hasPermission, setHasPermission] = useState(null); // Permission to access camera
+  const [faceDetected, setFaceDetected] = useState(false); // Is face detected
+  const [config, setConfig] = useState(true); // show information on screen
+  const [leftEyeOpenProbability, setLeftEyeOpenProbability] = useState(0); // probability of left eye open
+  const [rightEyeOpenProbability, setRightEyeOpenProbabilityy] = useState(0); // probability of right eye open
+  const [numbnessDetected, seNumbnessDetected] = useState(false); // Numbness Detected
+  const [countDownStarted, setCountDownStarted] = useState(false); // count down numbness flag
+  const [countDownSeconds, setCountDownSeconds] = useState(0); // count down numbness timer
+  const [timer, setTimer] = useState(0); // num of times when handleFacesDetected function call
+  const [seconds, setSeconds] = useState(0); // second timer
+  const [fps, setFps] = useState(0); // timer / seconds
+  const [blinkCount, setBlinksCount] = useState(0); // blink counter
+  const [lastBlink, setLastBlink] = useState(0); // last blink detected
+  const [blinkInterval, setBlinkInterval] = useState(0); // interval between two blink
+  const [intervalFrequency, setIntervalFrequency] = useState(0); // frequency of blink interval less then blinkIntervalBelowAcceptable
+  const [type, setType] = useState(Camera.Constants.Type.front); // type of camera (front or back)
+  const [sound, setSound] = useState(undefined); // alert sound
   const openEyeSleep = 0.9;
   const openEyeSleepSeconds = 0.5;
+  const blinkIntervalBelowAcceptable = 2;
 
   const stopSound = async () => {
     if (sound) await sound.stopAsync();
@@ -54,8 +57,8 @@ export default function App() {
 
   useEffect(() => {
     const counter = setInterval(() => {
-      setSeconds((seconds) => seconds + 1);
-    }, 1000);
+      setSeconds((seconds) => seconds + 0.1);
+    }, 100);
     return () => clearInterval(counter);
   }, []);
 
@@ -71,14 +74,14 @@ export default function App() {
     if (countDownSeconds === 0) {
       setCountDownSeconds(timer);
     } else if (timer - countDownSeconds >= openEyeSleepSeconds * fps) {
-      setSleepDetected(true);
       playSound();
+      seNumbnessDetected(true);
     }
   };
 
   const cancelCountDown = () => {
     setCountDownStarted(false);
-    setSleepDetected(false);
+    seNumbnessDetected(false);
     setCountDownSeconds(0);
     stopSound();
   };
@@ -109,8 +112,20 @@ export default function App() {
         face?.leftEyeOpenProbability <= openEyeSleep &&
         face?.rightEyeOpenProbability <= openEyeSleep
       ) {
-        if (!countDownStarted) setBlicksCount((blicksCount) => blicksCount + 1);
-        if (!sleepDetected) initCountDown();
+        if (!countDownStarted) {
+          setBlinksCount((blicksCount) => blicksCount + 1);
+          if (lastBlink > 0) {
+            const thisBlinkInterval = seconds - lastBlink;
+            setBlinkInterval(thisBlinkInterval);
+            if (thisBlinkInterval < blinkIntervalBelowAcceptable) {
+              setIntervalFrequency(
+                (intervalFrequency) => intervalFrequency + 1
+              );
+            } else setIntervalFrequency(0);
+          }
+          setLastBlink(seconds);
+        }
+        if (!numbnessDetected) initCountDown();
       } else {
         cancelCountDown();
       }
@@ -120,7 +135,6 @@ export default function App() {
     }
   };
 
-  // alert(`height: ${height}, width: ${width}`);
   return (
     <View style={{ ...styles.container }}>
       <StatusBar hidden style="inverted" backgroundColor={"black"} />
@@ -137,32 +151,37 @@ export default function App() {
           minDetectionInterval: 100,
           tracking: true,
         }}
-        ref={(ref) => {
-          setCamera(ref);
-        }}
       >
         <View style={styles.faceBox}>
           <View
             style={[
               styles.faceDetectedBox,
-              (sleepDetected && { backgroundColor: "red" }) ||
+              (numbnessDetected && { backgroundColor: "red" }) ||
+                (intervalFrequency >= 4 && { backgroundColor: "#D9B51D" }) ||
                 (faceDetected && { backgroundColor: "green" }),
             ]}
           >
             <Text style={styles.text}>
-              {!faceDetected
-                ? "Face not detected"
-                : sleepDetected
-                ? "Sleep detected"
-                : "Face detected"}
+              {(!faceDetected && "Face not detected") ||
+                (numbnessDetected && "Numbness detected") ||
+                (intervalFrequency >= 4 && "Sleep detected") ||
+                "Face detected"}
             </Text>
           </View>
           {config && (
             <View style={styles.faceInfoBox}>
-              <Text style={styles.textInfo}>{`Sec(s): ${seconds}`}</Text>
+              <Text style={styles.textInfo}>{`Sec(s): ${seconds.toFixed(
+                1
+              )}`}</Text>
               <Text style={styles.textInfo}>{`Frames: ${timer}`}</Text>
               <Text style={styles.textInfo}>{`FPS: ${fps}`}</Text>
               <Text style={styles.textInfo}>{`Blinks: ${blinkCount}`}</Text>
+              <Text
+                style={styles.textInfo}
+              >{`Blink interval: ${blinkInterval.toFixed(1)} sec`}</Text>
+              <Text
+                style={styles.textInfo}
+              >{`Interval frequency: ${intervalFrequency}`}</Text>
               <Text style={styles.textInfo}>{`count down sec: ${
                 countDownSeconds > 0
                   ? ((timer - countDownSeconds) / fps).toFixed(0)
@@ -263,7 +282,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   textInfo: {
-    fontSize: 14,
+    fontSize: 12,
     textAlign: "left",
     color: "white",
   },
