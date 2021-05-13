@@ -146,7 +146,7 @@ export default function App() {
         onFacesDetected={handleFacesDetected}
         faceDetectorSettings={{
           mode: FaceDetector.Constants.Mode.fast,
-          detectLandmarks: FaceDetector.Constants.Landmarks.none,
+          detectLandmarks: FaceDetector.Constants.Landmarks.all,
           runClassifications: FaceDetector.Constants.Classifications.all,
           minDetectionInterval: 100,
           tracking: true,
@@ -157,7 +157,8 @@ export default function App() {
             style={[
               styles.faceDetectedBox,
               (numbnessDetected && { backgroundColor: "red" }) ||
-                (intervalFrequency >= 4 && { backgroundColor: "#D9B51D" }) ||
+                (faceDetected &&
+                  intervalFrequency >= 4 && { backgroundColor: "#D9B51D" }) ||
                 (faceDetected && { backgroundColor: "green" }),
             ]}
           >
@@ -165,7 +166,7 @@ export default function App() {
               {(!faceDetected && "Face not detected") ||
                 (numbnessDetected && "Numbness detected") ||
                 (intervalFrequency >= 4 && "Sleep detected") ||
-                "Face detected"}
+                "Awake"}
             </Text>
           </View>
           {config && (
@@ -181,7 +182,7 @@ export default function App() {
               >{`Blink interval: ${blinkInterval.toFixed(1)} sec`}</Text>
               <Text
                 style={styles.textInfo}
-              >{`Interval frequency: ${intervalFrequency}`}</Text>
+              >{`Low interval count: ${intervalFrequency}`}</Text>
               <Text style={styles.textInfo}>{`count down sec: ${
                 countDownSeconds > 0
                   ? ((timer - countDownSeconds) / fps).toFixed(0)
