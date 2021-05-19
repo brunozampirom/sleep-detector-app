@@ -1,8 +1,16 @@
-import React, { useState, useEffect } from "react";
-import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import {
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  AppState,
+  Dimensions,
+} from "react-native";
 import { Camera } from "expo-camera";
 import * as FaceDetector from "expo-face-detector";
 import AreaMarker from "./components/AreaMarker";
+import FaceAreaMarker from "./components/FaceAreaMarker";
 import { Audio } from "expo-av";
 import { StatusBar } from "expo-status-bar";
 
@@ -26,9 +34,42 @@ export default function App() {
   const [intervalFrequency, setIntervalFrequency] = useState(0); // frequency of blink interval less then blinkIntervalBelowAcceptable
   const [type, setType] = useState(Camera.Constants.Type.front); // type of camera (front or back)
   const [sound, setSound] = useState(undefined); // alert sound
+  const appState = useRef(AppState.currentState);
+  const [appStateVisible, setAppStateVisible] = useState(appState.current);
+  const [faceProps, setFaceProps] = useState(); // face measures
+  const [mouthDiff, setMouthDiff] = useState(); // pixel difference between mouth and chin
+  const [mouthOpen, setMouthOpen] = useState(false); // is month open
+  const [whenMouthOpen, setWhenMouthOpen] = useState(0); // mark time when mouth open
+  const [yawn, setYawn] = useState(false); // is yawn
+  const [numberOfYawns, setNumberOfYawns] = useState([]); // list of yawns
+  const [faceSizeBigger, setFaceSizeBig] = useState(false); // if face size is bigger than limit
+  const [faceSizeSmaller, setFaceSizeSmaller] = useState(false); // if face size is smaller than limit
+
   const openEyeSleep = 0.9;
   const openEyeSleepSeconds = 0.5;
-  const blinkIntervalBelowAcceptable = 2;
+  const blinkIntervalBelowAcceptable = 3;
+  const faceUpperSizeLimit = Dimensions.get("window").width * 0.8;
+  const faceLowerSizeLimit = Dimensions.get("window").width * 0.4;
+
+  useEffect(() => {
+    AppState.addEventListener("change", _handleAppStateChange);
+
+    return () => {
+      AppState.removeEventListener("change", _handleAppStateChange);
+    };
+  }, []);
+
+  const _handleAppStateChange = (nextAppState) => {
+    if (
+      appState.current.match(/inactive|background/) &&
+      nextAppState === "active"
+    ) {
+      alert("App has come to the foreground!");
+    }
+
+    appState.current = nextAppState;
+    setAppStateVisible(appState.current);
+  };
 
   const stopSound = async () => {
     if (sound) await sound.stopAsync();
@@ -97,15 +138,71 @@ export default function App() {
     //   `left: ${left.toFixed(2)} / right: ${right.toFixed(2)}\n
     //   top: ${top.toFixed(2)} / bottom: ${bottom.toFixed(2)}`
     // );
-    return left > 10 && top > 250 && right < 400 && bottom < 650;
+    setFaceProps({
+      height: size.height,
+      width: size.width,
+      left,
+      right,
+      top,
+      bottom,
+    });
+    // return (
+    //   left > (Dimensions.get("window").width - 300) / 2 &&
+    //   top > (Dimensions.get("window").height - 450) / 2 &&
+    //   right < Dimensions.get("window").width / 2 + 300 / 2 &&
+    //   bottom < Dimensions.get("window").height / 2 + 450 / 2
+    // );
+    return true;
+  };
+
+  const verifyMonth = (face) => {
+    const bottom = face?.bounds?.origin?.y + face?.bounds?.size?.height;
+    if (!mouthDiff)
+      setMouthDiff(
+        (bottom - face.bottomMouthPosition.y) / face?.bounds?.size?.width - 0.03
+      );
+    else if (
+      mouthDiff >=
+      (bottom - face.bottomMouthPosition.y) / face?.bounds?.size?.width
+    ) {
+      setMouthOpen(true);
+      if (whenMouthOpen === 0) setWhenMouthOpen(seconds);
+      else if (!yawn && seconds > whenMouthOpen + 1) {
+        setYawn(true);
+        setNumberOfYawns((oldArray) => [...oldArray, seconds]);
+      }
+    } else {
+      setMouthOpen(false);
+      setYawn(false);
+      setWhenMouthOpen(0);
+    }
+  };
+
+  const verifyFaceSize = (bounds) => {
+    const width = bounds?.size?.width;
+    let isSizeOk = true;
+    if (width >= faceUpperSizeLimit) {
+      setFaceSizeBig(true);
+      isSizeOk = false;
+    } else setFaceSizeBig(false);
+    if (width <= faceLowerSizeLimit) {
+      setFaceSizeSmaller(true);
+      isSizeOk = false;
+    } else setFaceSizeSmaller(false);
+    return isSizeOk;
   };
 
   const handleFacesDetected = (props) => {
     setTimer((timer) => timer + 1);
-    if (props?.faces?.length > 0 && onAreaMarked(props.faces[0].bounds)) {
+    if (
+      props?.faces?.length > 0 &&
+      verifyFaceSize(props?.faces[0]?.bounds) &&
+      onAreaMarked(props?.faces[0]?.bounds)
+    ) {
       setFaceDetected(true);
       const face = props.faces[0];
       // console.log(face);
+      verifyMonth(face);
       setLeftEyeOpenProbability(face?.leftEyeOpenProbability);
       setRightEyeOpenProbabilityy(face?.rightEyeOpenProbability);
       if (
@@ -130,6 +227,7 @@ export default function App() {
         cancelCountDown();
       }
     } else {
+      setFaceProps();
       setFaceDetected(false);
       cancelCountDown();
     }
@@ -156,16 +254,20 @@ export default function App() {
           <View
             style={[
               styles.faceDetectedBox,
-              (numbnessDetected && { backgroundColor: "red" }) ||
-                (faceDetected &&
-                  intervalFrequency >= 4 && { backgroundColor: "#D9B51D" }) ||
+              (numbnessDetected && !yawn && { backgroundColor: "red" }) ||
+                (((faceDetected && intervalFrequency >= 4) || yawn) && {
+                  backgroundColor: "#D9B51D",
+                }) ||
                 (faceDetected && { backgroundColor: "green" }),
             ]}
           >
             <Text style={styles.text}>
-              {(!faceDetected && "Face not detected") ||
-                (numbnessDetected && "Numbness detected") ||
+              {(faceSizeBigger && "move away from the camera please") ||
+                (faceSizeSmaller && "approach the camera please") ||
+                (!faceDetected && "Face not detected") ||
+                (numbnessDetected && !yawn && "Numbness detected") ||
                 (intervalFrequency >= 4 && "Sleep detected") ||
+                (yawn && "Yawn detected") ||
                 "Awake"}
             </Text>
           </View>
@@ -188,6 +290,17 @@ export default function App() {
                   ? ((timer - countDownSeconds) / fps).toFixed(0)
                   : 0
               }`}</Text>
+              <Text style={styles.textInfo}>{`mouthDiff: ${mouthDiff}`}</Text>
+              <Text style={styles.textInfo}>{`mouth open: ${mouthOpen}`}</Text>
+              <Text style={styles.textInfo}>{`yawn: ${yawn}`}</Text>
+              <Text
+                style={styles.textInfo}
+              >{`number of yawns: ${numberOfYawns?.length}`}</Text>
+              {Array.isArray(numberOfYawns) && numberOfYawns?.length > 0 && (
+                <Text style={styles.textInfo}>{`last yawn: ${numberOfYawns[
+                  numberOfYawns.length - 1
+                ].toFixed(1)} sec`}</Text>
+              )}
               {faceDetected && (
                 <>
                   <Text
@@ -217,6 +330,7 @@ export default function App() {
             </View>
           )}
         </View>
+        <FaceAreaMarker faceProps={faceProps} />
         <AreaMarker faceOnArea={faceDetected} />
       </Camera>
       <View style={styles.buttonContainer}>
@@ -276,7 +390,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-around",
     alignItems: "center",
     opacity: 0.8,
-    height: 30,
+    height: 40,
   },
   faceInfoBox: {
     marginTop: 10,

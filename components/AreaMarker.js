@@ -39,13 +39,12 @@ export default AreaMarker = ({ faceOnArea = false }) => {
 const styles = StyleSheet.create({
   Container: {
     position: "absolute",
-    height: 450,
-    width: 300,
-    marginTop: 25,
-    top: (Dimensions.get("window").height - 450) / 2,
-    bottom: (Dimensions.get("window").height - 450) / 2,
-    left: (Dimensions.get("window").width - 300) / 2,
-    right: (Dimensions.get("window").width - 300) / 2,
+    height: 550,
+    width: 350,
+    top: (Dimensions.get("window").height - 550) / 2,
+    bottom: (Dimensions.get("window").height - 550) / 2,
+    left: (Dimensions.get("window").width - 350) / 2,
+    right: (Dimensions.get("window").width - 350) / 2,
   },
   Borders: {
     position: "absolute",
@@ -58,18 +57,18 @@ const styles = StyleSheet.create({
     borderTopWidth: 8,
   },
   BorderRightTop: {
-    left: 300 - 50,
+    left: 350 - 50,
     borderTopWidth: 8,
     borderRightWidth: 8,
   },
   BorderLeftBottom: {
-    top: 450 - 50,
+    top: 550 - 50,
     borderLeftWidth: 8,
     borderBottomWidth: 8,
   },
   BorderRightBottom: {
-    top: 450 - 50,
-    left: 300 - 50,
+    top: 550 - 50,
+    left: 350 - 50,
     borderRightWidth: 8,
     borderBottomWidth: 8,
   },
