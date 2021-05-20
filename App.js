@@ -13,6 +13,7 @@ import AreaMarker from "./components/AreaMarker";
 import FaceAreaMarker from "./components/FaceAreaMarker";
 import { Audio } from "expo-av";
 import { StatusBar } from "expo-status-bar";
+import { MaterialIcons } from "@expo/vector-icons";
 
 const alarm = require("./assets/audio/alarm-clock.mp3");
 
@@ -250,109 +251,117 @@ export default function App() {
           tracking: true,
         }}
       >
-        <View style={styles.faceBox}>
-          <View
-            style={[
-              styles.faceDetectedBox,
-              (numbnessDetected && !yawn && { backgroundColor: "red" }) ||
-                (((faceDetected && intervalFrequency >= 4) || yawn) && {
-                  backgroundColor: "#D9B51D",
-                }) ||
-                (faceDetected && { backgroundColor: "green" }),
-            ]}
-          >
-            <Text style={styles.text}>
-              {(faceSizeBigger && "move away from the camera please") ||
-                (faceSizeSmaller && "approach the camera please") ||
-                (!faceDetected && "Face not detected") ||
-                (numbnessDetected && !yawn && "Numbness detected") ||
-                (intervalFrequency >= 4 && "Sleep detected") ||
-                (yawn && "Yawn detected") ||
-                "Awake"}
-            </Text>
-          </View>
-          {config && (
-            <View style={styles.faceInfoBox}>
-              <Text style={styles.textInfo}>{`Sec(s): ${seconds.toFixed(
-                1
-              )}`}</Text>
-              <Text style={styles.textInfo}>{`Frames: ${timer}`}</Text>
-              <Text style={styles.textInfo}>{`FPS: ${fps}`}</Text>
-              <Text style={styles.textInfo}>{`Blinks: ${blinkCount}`}</Text>
-              <Text
-                style={styles.textInfo}
-              >{`Blink interval: ${blinkInterval.toFixed(1)} sec`}</Text>
-              <Text
-                style={styles.textInfo}
-              >{`Low interval count: ${intervalFrequency}`}</Text>
-              <Text style={styles.textInfo}>{`count down sec: ${
-                countDownSeconds > 0
-                  ? ((timer - countDownSeconds) / fps).toFixed(0)
-                  : 0
-              }`}</Text>
-              <Text style={styles.textInfo}>{`mouthDiff: ${mouthDiff}`}</Text>
-              <Text style={styles.textInfo}>{`mouth open: ${mouthOpen}`}</Text>
-              <Text style={styles.textInfo}>{`yawn: ${yawn}`}</Text>
-              <Text
-                style={styles.textInfo}
-              >{`number of yawns: ${numberOfYawns?.length}`}</Text>
-              {Array.isArray(numberOfYawns) && numberOfYawns?.length > 0 && (
-                <Text style={styles.textInfo}>{`last yawn: ${numberOfYawns[
-                  numberOfYawns.length - 1
-                ].toFixed(1)} sec`}</Text>
-              )}
-              {faceDetected && (
-                <>
-                  <Text
-                    style={[
-                      styles.textInfo,
-                      leftEyeOpenProbability < openEyeSleep && { color: "red" },
-                    ]}
-                  >
-                    {`Right open prob: ${(
-                      leftEyeOpenProbability * 100
-                    )?.toFixed(2)}%`}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.textInfo,
-                      rightEyeOpenProbability < openEyeSleep && {
-                        color: "red",
-                      },
-                    ]}
-                  >
-                    {`Left open prob: ${(
-                      rightEyeOpenProbability * 100
-                    )?.toFixed(2)}%`}
-                  </Text>
-                </>
-              )}
-            </View>
-          )}
+        <View
+          style={[
+            styles.faceDetectedBox,
+            (numbnessDetected && !yawn && { backgroundColor: "red" }) ||
+              (((faceDetected && intervalFrequency >= 4) || yawn) && {
+                backgroundColor: "#D9B51D",
+              }) ||
+              (faceDetected && { backgroundColor: "green" }),
+          ]}
+        >
+          <Text style={styles.text}>
+            {(faceSizeBigger && "move away from the camera") ||
+              (faceSizeSmaller && "approach the camera") ||
+              (!faceDetected && "Face not detected") ||
+              (numbnessDetected && !yawn && "Numbness") ||
+              (intervalFrequency >= 4 && "Sleep") ||
+              (yawn && "Yawn") ||
+              "Awake"}
+          </Text>
         </View>
+        {config && (
+          <View style={styles.faceInfoBox}>
+            <Text style={styles.textInfo}>{`Sec(s): ${seconds.toFixed(
+              1
+            )}`}</Text>
+            <Text style={styles.textInfo}>{`Frames: ${timer}`}</Text>
+            <Text style={styles.textInfo}>{`FPS: ${fps}`}</Text>
+            <Text style={styles.textInfo}>{`Blinks: ${blinkCount}`}</Text>
+            <Text
+              style={styles.textInfo}
+            >{`Blink interval: ${blinkInterval.toFixed(1)} sec`}</Text>
+            <Text
+              style={styles.textInfo}
+            >{`Low interval count: ${intervalFrequency}`}</Text>
+            <Text style={styles.textInfo}>{`count down sec: ${
+              countDownSeconds > 0
+                ? ((timer - countDownSeconds) / fps).toFixed(0)
+                : 0
+            }`}</Text>
+            <Text style={styles.textInfo}>{`mouthDiff: ${mouthDiff}`}</Text>
+            <Text style={styles.textInfo}>{`mouth open: ${mouthOpen}`}</Text>
+            <Text style={styles.textInfo}>{`yawn: ${yawn}`}</Text>
+            <Text
+              style={styles.textInfo}
+            >{`number of yawns: ${numberOfYawns?.length}`}</Text>
+            {Array.isArray(numberOfYawns) && numberOfYawns?.length > 0 && (
+              <Text style={styles.textInfo}>{`last yawn: ${numberOfYawns[
+                numberOfYawns.length - 1
+              ].toFixed(1)} sec`}</Text>
+            )}
+            {faceDetected && (
+              <>
+                <Text
+                  style={[
+                    styles.textInfo,
+                    leftEyeOpenProbability < openEyeSleep && { color: "red" },
+                  ]}
+                >
+                  {`Right open prob: ${(leftEyeOpenProbability * 100)?.toFixed(
+                    2
+                  )}%`}
+                </Text>
+                <Text
+                  style={[
+                    styles.textInfo,
+                    rightEyeOpenProbability < openEyeSleep && {
+                      color: "red",
+                    },
+                  ]}
+                >
+                  {`Left open prob: ${(rightEyeOpenProbability * 100)?.toFixed(
+                    2
+                  )}%`}
+                </Text>
+              </>
+            )}
+          </View>
+        )}
         <FaceAreaMarker faceProps={faceProps} />
-        <AreaMarker faceOnArea={faceDetected} />
+        {/* <AreaMarker faceOnArea={faceDetected} /> */}
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => setConfig(!config)}
+          >
+            <MaterialIcons
+              style={styles.icon}
+              name="settings"
+              size={40}
+              color="white"
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => {
+              setType(
+                type === Camera.Constants.Type.back
+                  ? Camera.Constants.Type.front
+                  : Camera.Constants.Type.back
+              );
+            }}
+          >
+            <MaterialIcons
+              style={styles.icon}
+              name="flip-camera-android"
+              size={40}
+              color="white"
+            />
+          </TouchableOpacity>
+        </View>
       </Camera>
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => {
-            setType(
-              type === Camera.Constants.Type.back
-                ? Camera.Constants.Type.front
-                : Camera.Constants.Type.back
-            );
-          }}
-        >
-          <Text style={styles.text}> Flip </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => setConfig(!config)}
-        >
-          <Text style={styles.text}> Config </Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 }
@@ -367,7 +376,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   buttonContainer: {
-    height: 55,
+    position: "absolute",
+    bottom: 30,
+    left: 0,
+    right: 0,
     backgroundColor: "transparent",
     flexDirection: "row",
     justifyContent: "space-between",
@@ -377,23 +389,26 @@ const styles = StyleSheet.create({
     flex: 0.3,
     alignItems: "center",
   },
-  faceBox: {
-    position: "absolute",
-    width: "100%",
-    height: 180,
-    left: 0,
-    right: 0,
+  icon: {
+    padding: 10,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 50,
   },
   faceDetectedBox: {
     backgroundColor: "black",
+    position: "absolute",
+    width: "65%",
+    alignSelf: "center",
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "center",
-    opacity: 0.8,
+    opacity: 0.9,
     height: 40,
+    top: 25,
+    borderRadius: 10,
   },
   faceInfoBox: {
-    marginTop: 10,
+    marginTop: 80,
     paddingHorizontal: 10,
   },
   textInfo: {
