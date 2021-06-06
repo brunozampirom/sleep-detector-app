@@ -32,6 +32,9 @@ export default function App() {
   const [blinkCount, setBlinksCount] = useState(0); // blink counter
   const [lastBlink, setLastBlink] = useState(0); // last blink detected
   const [blinkInterval, setBlinkInterval] = useState(0); // interval between two blink
+  const [blinkDuration, setBlinkDuration] = useState(0); // interval between two blink
+  const [blinkDurationCount, setBlinkDurationCount] = useState(0); // interval between two blink
+  const [blinkDurationStart, setBlinkDurationStart] = useState(0); // interval between two blink
   const [intervalFrequency, setIntervalFrequency] = useState(0); // frequency of blink interval less then blinkIntervalBelowAcceptable
   const [type, setType] = useState(Camera.Constants.Type.front); // type of camera (front or back)
   const [sound, setSound] = useState(undefined); // alert sound
@@ -49,6 +52,7 @@ export default function App() {
   const openEyeSleep = 0.9;
   const openEyeSleepSeconds = 0.5;
   const blinkIntervalBelowAcceptable = 3;
+  const blinkDurationAboveAcceptable = 0.2;
   const faceUpperSizeLimit = Dimensions.get("window").width * 0.8;
   const faceLowerSizeLimit = Dimensions.get("window").width * 0.4;
 
@@ -169,7 +173,7 @@ export default function App() {
       setMouthOpen(true);
       if (whenMouthOpen === 0) setWhenMouthOpen(seconds);
       else if (!yawn && seconds > whenMouthOpen + 1) {
-        setYawn(true);
+        // setYawn(true);
         setNumberOfYawns((oldArray) => [...oldArray, seconds]);
       }
     } else {
@@ -211,6 +215,7 @@ export default function App() {
         face?.rightEyeOpenProbability <= openEyeSleep
       ) {
         if (!countDownStarted) {
+          setBlinkDurationStart(seconds);
           setBlinksCount((blicksCount) => blicksCount + 1);
           if (lastBlink > 0) {
             const thisBlinkInterval = seconds - lastBlink;
@@ -226,6 +231,16 @@ export default function App() {
         if (!numbnessDetected) initCountDown();
       } else {
         cancelCountDown();
+        if (countDownStarted) {
+          setBlinkDuration(seconds - blinkDurationStart);
+          if (seconds - blinkDurationStart > blinkDurationAboveAcceptable) {
+            setBlinkDurationCount(
+              (blinkDurationCount) => blinkDurationCount + 1
+            );
+          } else {
+            setBlinkDurationCount(0);
+          }
+        }
       }
     } else {
       setFaceProps();
@@ -255,7 +270,10 @@ export default function App() {
           style={[
             styles.faceDetectedBox,
             (numbnessDetected && !yawn && { backgroundColor: "red" }) ||
-              (((faceDetected && intervalFrequency >= 4) || yawn) && {
+              (((faceDetected &&
+                intervalFrequency >= 4 &&
+                blinkDurationCount >= 4) ||
+                yawn) && {
                 backgroundColor: "#D9B51D",
               }) ||
               (faceDetected && { backgroundColor: "green" }),
@@ -266,7 +284,7 @@ export default function App() {
               (faceSizeSmaller && "approach the camera") ||
               (!faceDetected && "Face not detected") ||
               (numbnessDetected && !yawn && "Numbness") ||
-              (intervalFrequency >= 4 && "Sleep") ||
+              (intervalFrequency >= 4 && blinkDurationCount >= 4 && "Sleep") ||
               (yawn && "Yawn") ||
               "Awake"}
           </Text>
@@ -301,6 +319,12 @@ export default function App() {
                 numberOfYawns.length - 1
               ].toFixed(1)} sec`}</Text>
             )}
+            <Text
+              style={styles.textInfo}
+            >{`last blink duration: ${blinkDuration.toFixed(3)}`}</Text>
+            <Text
+              style={styles.textInfo}
+            >{`last blink duration count: ${blinkDurationCount}`}</Text>
             {faceDetected && (
               <>
                 <Text
@@ -343,6 +367,22 @@ export default function App() {
               color="white"
             />
           </TouchableOpacity>
+          <View
+            style={styles.icon}
+            opacity={
+              (intervalFrequency >= 4 && blinkDurationCount >= 4) ||
+              numbnessDetected
+                ? 1
+                : 0
+            }
+          >
+            <Text
+              style={{ color: "white", width: 150, textAlign: "center" }}
+              numberOfLines={2}
+            >
+              It's recommended to stop driving
+            </Text>
+          </View>
           <TouchableOpacity
             style={styles.button}
             onPress={() => {
@@ -382,7 +422,7 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: "transparent",
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "space-around",
     alignItems: "center",
   },
   button: {
