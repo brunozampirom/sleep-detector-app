@@ -14,6 +14,9 @@ import FaceAreaMarker from "./components/FaceAreaMarker";
 import { Audio } from "expo-av";
 import { StatusBar } from "expo-status-bar";
 import { MaterialIcons } from "@expo/vector-icons";
+import Constants from "expo-constants";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import moment from "moment";
 
 const alarm = require("./assets/audio/alarm-clock.mp3");
 
@@ -90,6 +93,37 @@ export default function App() {
     } else await sound.replayAsync();
   };
 
+  const saveInfoOnStorage = async (key, value) => {
+    try {
+      const jsonValue = JSON.stringify(value);
+      await AsyncStorage.setItem(key, jsonValue);
+    } catch (e) {
+      alert("There was an error saving informations.");
+    }
+  };
+
+  const getInfoFromStorage = async (key) => {
+    try {
+      const jsonValue = await AsyncStorage.getItem(key);
+      return jsonValue != null ? JSON.parse(jsonValue) : null;
+    } catch (e) {
+      alert("There was an error when recover informations.");
+    }
+  };
+
+  const pushAndSave = async (key, value) => {
+    const valueList = (await getInfoFromStorage(key)) ?? [];
+    valueList.push(value);
+    console.log(valueList);
+    saveInfoOnStorage(key, valueList);
+  };
+
+  const saveInfoDateTime = async (key, value) => {
+    const timestamp = moment();
+    const valueObject = value ? { value, timestamp } : { timestamp };
+    pushAndSave(key, valueObject);
+  };
+
   useEffect(() => {
     (async () => {
       const { status } = await Camera.requestPermissionsAsync();
@@ -122,6 +156,7 @@ export default function App() {
     } else if (timer - countDownSeconds >= openEyeSleepSeconds * fps) {
       playSound();
       seNumbnessDetected(true);
+      saveInfoDateTime("Numbness");
     }
   };
 
@@ -251,12 +286,12 @@ export default function App() {
 
   return (
     <View style={{ ...styles.container }}>
-      <StatusBar hidden style="inverted" backgroundColor={"black"} />
+      <StatusBar style="inverted" backgroundColor={"black"} />
       <Camera
+        ratio={"16:9"}
         style={styles.camera}
         type={type}
         autoFocus
-        ratio={"16:9"}
         onFacesDetected={handleFacesDetected}
         faceDetectorSettings={{
           mode: FaceDetector.Constants.Mode.fast,
@@ -295,7 +330,7 @@ export default function App() {
               1
             )}`}</Text>
             <Text style={styles.textInfo}>{`Frames: ${timer}`}</Text>
-            <Text style={styles.textInfo}>{`FPS: ${fps}`}</Text>
+            <Text style={styles.textInfo}>{`Func called per sec: ${fps}`}</Text>
             <Text style={styles.textInfo}>{`Blinks: ${blinkCount}`}</Text>
             <Text
               style={styles.textInfo}
@@ -410,6 +445,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "black",
+    paddingTop: Constants.statusBarHeight,
   },
   camera: {
     borderRadius: 30,

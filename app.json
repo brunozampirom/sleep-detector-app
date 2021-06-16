@@ -23,7 +23,12 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
-      }
+      },
+      "package": "com.brunozampirom.sleepdetector"
+    },
+    "androidNavigationBar": {
+      "visible": false,
+      "backgroundColor": "#000000"
     },
     "web": {
       "favicon": "./assets/favicon.png"
