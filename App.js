@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { Camera } from "expo-camera";
 import * as FaceDetector from "expo-face-detector";
-import AreaMarker from "./components/AreaMarker";
+// import AreaMarker from "./components/AreaMarker";
 import FaceAreaMarker from "./components/FaceAreaMarker";
 import { Audio } from "expo-av";
 import { StatusBar } from "expo-status-bar";
@@ -27,6 +27,7 @@ export default function App() {
   const [leftEyeOpenProbability, setLeftEyeOpenProbability] = useState(0); // probability of left eye open
   const [rightEyeOpenProbability, setRightEyeOpenProbabilityy] = useState(0); // probability of right eye open
   const [numbnessDetected, seNumbnessDetected] = useState(false); // Numbness Detected
+  const [sleepDetected, setSleepDetected] = useState(false); // sleep Detected
   const [countDownStarted, setCountDownStarted] = useState(false); // count down numbness flag
   const [countDownSeconds, setCountDownSeconds] = useState(0); // count down numbness timer
   const [timer, setTimer] = useState(0); // num of times when handleFacesDetected function call
@@ -37,26 +38,24 @@ export default function App() {
   const [blinkInterval, setBlinkInterval] = useState(0); // interval between two blink
   const [blinkDuration, setBlinkDuration] = useState(0); // interval between two blink
   const [blinkDurationCount, setBlinkDurationCount] = useState(0); // interval between two blink
+  const [longBlinkDuration, setLongBlinkDuration] = useState(false);
   const [blinkDurationStart, setBlinkDurationStart] = useState(0); // interval between two blink
   const [intervalFrequency, setIntervalFrequency] = useState(0); // frequency of blink interval less then blinkIntervalBelowAcceptable
+  const [shortBlinkInterval, setShortBlinkInterval] = useState(false);
   const [type, setType] = useState(Camera.Constants.Type.front); // type of camera (front or back)
   const [sound, setSound] = useState(undefined); // alert sound
-  const appState = useRef(AppState.currentState);
-  const [appStateVisible, setAppStateVisible] = useState(appState.current);
   const [faceProps, setFaceProps] = useState(); // face measures
-  const [mouthDiff, setMouthDiff] = useState(); // pixel difference between mouth and chin
-  const [mouthOpen, setMouthOpen] = useState(false); // is month open
-  const [whenMouthOpen, setWhenMouthOpen] = useState(0); // mark time when mouth open
-  const [yawn, setYawn] = useState(false); // is yawn
-  const [numberOfYawns, setNumberOfYawns] = useState([]); // list of yawns
   const [faceSizeBigger, setFaceSizeBig] = useState(false); // if face size is bigger than limit
   const [faceSizeSmaller, setFaceSizeSmaller] = useState(false); // if face size is smaller than limit
 
+  const appState = useRef(AppState.currentState);
+  const [appStateVisible, setAppStateVisible] = useState(appState.current);
+
   const openEyeSleep = 0.9;
-  const openEyeSleepSeconds = 0.5;
+  const openEyeSleepSeconds = 1.5;
   const blinkIntervalBelowAcceptable = 3;
   const blinkDurationAboveAcceptable = 0.2;
-  const faceUpperSizeLimit = Dimensions.get("window").width * 0.8;
+  const faceUpperSizeLimit = Dimensions.get("window").width * 0.85;
   const faceLowerSizeLimit = Dimensions.get("window").width * 0.4;
 
   useEffect(() => {
@@ -136,6 +135,16 @@ export default function App() {
   }, [seconds]);
 
   useEffect(() => {
+    if (intervalFrequency > 5) setShortBlinkInterval(true);
+    else setShortBlinkInterval(false);
+    if (blinkDurationCount > 5) setLongBlinkDuration(true);
+    else setLongBlinkDuration(false);
+
+    if (intervalFrequency > 5 && blinkDurationCount > 5) setSleepDetected(true);
+    else setSleepDetected(false);
+  }, [intervalFrequency, blinkDurationCount]);
+
+  useEffect(() => {
     const counter = setInterval(() => {
       setSeconds((seconds) => seconds + 0.1);
     }, 100);
@@ -152,8 +161,8 @@ export default function App() {
   const initCountDown = () => {
     setCountDownStarted(true);
     if (countDownSeconds === 0) {
-      setCountDownSeconds(timer);
-    } else if (timer - countDownSeconds >= openEyeSleepSeconds * fps) {
+      setCountDownSeconds(seconds);
+    } else if (seconds > countDownSeconds + openEyeSleepSeconds) {
       playSound();
       seNumbnessDetected(true);
       saveInfoDateTime("Numbness");
@@ -195,29 +204,6 @@ export default function App() {
     return true;
   };
 
-  const verifyMonth = (face) => {
-    const bottom = face?.bounds?.origin?.y + face?.bounds?.size?.height;
-    if (!mouthDiff)
-      setMouthDiff(
-        (bottom - face.bottomMouthPosition.y) / face?.bounds?.size?.width - 0.03
-      );
-    else if (
-      mouthDiff >=
-      (bottom - face.bottomMouthPosition.y) / face?.bounds?.size?.width
-    ) {
-      setMouthOpen(true);
-      if (whenMouthOpen === 0) setWhenMouthOpen(seconds);
-      else if (!yawn && seconds > whenMouthOpen + 1) {
-        // setYawn(true);
-        setNumberOfYawns((oldArray) => [...oldArray, seconds]);
-      }
-    } else {
-      setMouthOpen(false);
-      setYawn(false);
-      setWhenMouthOpen(0);
-    }
-  };
-
   const verifyFaceSize = (bounds) => {
     const width = bounds?.size?.width;
     let isSizeOk = true;
@@ -234,54 +220,85 @@ export default function App() {
 
   const handleFacesDetected = (props) => {
     setTimer((timer) => timer + 1);
-    if (
-      props?.faces?.length > 0 &&
-      verifyFaceSize(props?.faces[0]?.bounds) &&
-      onAreaMarked(props?.faces[0]?.bounds)
-    ) {
-      setFaceDetected(true);
-      const face = props.faces[0];
-      // console.log(face);
-      verifyMonth(face);
-      setLeftEyeOpenProbability(face?.leftEyeOpenProbability);
-      setRightEyeOpenProbabilityy(face?.rightEyeOpenProbability);
-      if (
-        face?.leftEyeOpenProbability <= openEyeSleep &&
-        face?.rightEyeOpenProbability <= openEyeSleep
-      ) {
-        if (!countDownStarted) {
-          setBlinkDurationStart(seconds);
-          setBlinksCount((blicksCount) => blicksCount + 1);
-          if (lastBlink > 0) {
-            const thisBlinkInterval = seconds - lastBlink;
-            setBlinkInterval(thisBlinkInterval);
-            if (thisBlinkInterval < blinkIntervalBelowAcceptable) {
-              setIntervalFrequency(
-                (intervalFrequency) => intervalFrequency + 1
+    if (props?.faces?.length > 0 && onAreaMarked(props?.faces[0]?.bounds)) {
+      if (verifyFaceSize(props?.faces[0]?.bounds)) {
+        setFaceDetected(true);
+        const face = props.faces[0];
+        // console.log(face);
+        // verifyMonth(face);
+        setLeftEyeOpenProbability(face?.leftEyeOpenProbability);
+        setRightEyeOpenProbabilityy(face?.rightEyeOpenProbability);
+        if (
+          face?.leftEyeOpenProbability <= openEyeSleep &&
+          face?.rightEyeOpenProbability <= openEyeSleep
+        ) {
+          if (!countDownStarted) {
+            setBlinkDurationStart(seconds);
+            setBlinksCount((blicksCount) => blicksCount + 1);
+            if (lastBlink > 0) {
+              const thisBlinkInterval = seconds - lastBlink;
+              setBlinkInterval(thisBlinkInterval);
+              if (thisBlinkInterval < blinkIntervalBelowAcceptable) {
+                setIntervalFrequency(
+                  (intervalFrequency) => intervalFrequency + 1
+                );
+              } else setIntervalFrequency(0);
+            }
+            setLastBlink(seconds);
+          }
+          if (!numbnessDetected) initCountDown();
+        } else {
+          cancelCountDown();
+          if (countDownStarted) {
+            setBlinkDuration(seconds - blinkDurationStart);
+            if (seconds - blinkDurationStart > blinkDurationAboveAcceptable) {
+              setBlinkDurationCount(
+                (blinkDurationCount) => blinkDurationCount + 1
               );
-            } else setIntervalFrequency(0);
+            } else {
+              setBlinkDurationCount(0);
+            }
           }
-          setLastBlink(seconds);
         }
-        if (!numbnessDetected) initCountDown();
       } else {
+        setFaceDetected(false);
         cancelCountDown();
-        if (countDownStarted) {
-          setBlinkDuration(seconds - blinkDurationStart);
-          if (seconds - blinkDurationStart > blinkDurationAboveAcceptable) {
-            setBlinkDurationCount(
-              (blinkDurationCount) => blinkDurationCount + 1
-            );
-          } else {
-            setBlinkDurationCount(0);
-          }
-        }
       }
     } else {
-      setFaceProps();
       setFaceDetected(false);
-      cancelCountDown();
+      setFaceProps();
+      setFaceSizeSmaller(false);
+      setFaceSizeBig(false);
     }
+  };
+
+  const getStatusColor = () => {
+    if (!faceDetected) {
+      return "#000000";
+    }
+    if (numbnessDetected) {
+      return "#FF0000";
+    }
+    if (sleepDetected) {
+      return "#FF6402";
+    }
+    if (shortBlinkInterval || longBlinkDuration) {
+      return "#D9B51D";
+    }
+    if (faceDetected) {
+      return "#039903";
+    }
+  };
+
+  const getStatusText = () => {
+    if (faceSizeBigger) return "move away from the camera";
+    if (faceSizeSmaller) return "approach the camera";
+    if (!faceDetected) return "Face not detected";
+    if (numbnessDetected) return "Numbness";
+    if (sleepDetected) return "Sleep";
+    if (longBlinkDuration) return "Long blink duration";
+    if (shortBlinkInterval) return "Short blink interval";
+    return "Awake";
   };
 
   return (
@@ -292,37 +309,18 @@ export default function App() {
         style={styles.camera}
         type={type}
         autoFocus
+        useCamera2Api
+        faceDetectorEnabled
         onFacesDetected={handleFacesDetected}
         faceDetectorSettings={{
           mode: FaceDetector.Constants.Mode.fast,
-          detectLandmarks: FaceDetector.Constants.Landmarks.all,
+          detectLandmarks: FaceDetector.Constants.Landmarks.none,
           runClassifications: FaceDetector.Constants.Classifications.all,
-          minDetectionInterval: 100,
           tracking: true,
         }}
       >
-        <View
-          style={[
-            styles.faceDetectedBox,
-            (numbnessDetected && !yawn && { backgroundColor: "red" }) ||
-              (((faceDetected &&
-                intervalFrequency >= 4 &&
-                blinkDurationCount >= 4) ||
-                yawn) && {
-                backgroundColor: "#D9B51D",
-              }) ||
-              (faceDetected && { backgroundColor: "green" }),
-          ]}
-        >
-          <Text style={styles.text}>
-            {(faceSizeBigger && "move away from the camera") ||
-              (faceSizeSmaller && "approach the camera") ||
-              (!faceDetected && "Face not detected") ||
-              (numbnessDetected && !yawn && "Numbness") ||
-              (intervalFrequency >= 4 && blinkDurationCount >= 4 && "Sleep") ||
-              (yawn && "Yawn") ||
-              "Awake"}
-          </Text>
+        <View style={[styles.statusBox, { backgroundColor: getStatusColor() }]}>
+          <Text style={styles.text}>{getStatusText()}</Text>
         </View>
         {config && (
           <View style={styles.faceInfoBox}>
@@ -343,17 +341,6 @@ export default function App() {
                 ? ((timer - countDownSeconds) / fps).toFixed(0)
                 : 0
             }`}</Text>
-            <Text style={styles.textInfo}>{`mouthDiff: ${mouthDiff}`}</Text>
-            <Text style={styles.textInfo}>{`mouth open: ${mouthOpen}`}</Text>
-            <Text style={styles.textInfo}>{`yawn: ${yawn}`}</Text>
-            <Text
-              style={styles.textInfo}
-            >{`number of yawns: ${numberOfYawns?.length}`}</Text>
-            {Array.isArray(numberOfYawns) && numberOfYawns?.length > 0 && (
-              <Text style={styles.textInfo}>{`last yawn: ${numberOfYawns[
-                numberOfYawns.length - 1
-              ].toFixed(1)} sec`}</Text>
-            )}
             <Text
               style={styles.textInfo}
             >{`last blink duration: ${blinkDuration.toFixed(3)}`}</Text>
@@ -402,15 +389,7 @@ export default function App() {
               color="white"
             />
           </TouchableOpacity>
-          <View
-            style={styles.icon}
-            opacity={
-              (intervalFrequency >= 4 && blinkDurationCount >= 4) ||
-              numbnessDetected
-                ? 1
-                : 0
-            }
-          >
+          <View style={styles.icon} opacity={sleepDetected ? 1 : 0}>
             <Text
               style={{ color: "white", width: 150, textAlign: "center" }}
               numberOfLines={2}
@@ -470,7 +449,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.2)",
     borderRadius: 50,
   },
-  faceDetectedBox: {
+  statusBox: {
     backgroundColor: "black",
     position: "absolute",
     width: "65%",
@@ -478,10 +457,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "center",
-    opacity: 0.9,
     height: 40,
     top: 25,
-    borderRadius: 10,
+    borderRadius: 20,
   },
   faceInfoBox: {
     marginTop: 80,
