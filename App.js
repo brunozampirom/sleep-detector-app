@@ -39,7 +39,7 @@ export default function App() {
   const [blinkDuration, setBlinkDuration] = useState(0); // interval between two blink
   const [blinkDurationCount, setBlinkDurationCount] = useState(0); // interval between two blink
   const [longBlinkDuration, setLongBlinkDuration] = useState(false);
-  const [blinkDurationStart, setBlinkDurationStart] = useState(0); // interval between two blink
+  const [blinkDurationStart, setBlinkDurationStart] = useState(0);
   const [intervalFrequency, setIntervalFrequency] = useState(0); // frequency of blink interval less then blinkIntervalBelowAcceptable
   const [shortBlinkInterval, setShortBlinkInterval] = useState(false);
   const [type, setType] = useState(Camera.Constants.Type.front); // type of camera (front or back)
@@ -92,6 +92,16 @@ export default function App() {
     } else await sound.replayAsync();
   };
 
+  const removeInfoOnStorage = async (key) => {
+    try {
+      await AsyncStorage.removeItem(key);
+    } catch (e) {
+      alert("There was an error removing informations.");
+    }
+
+    alert("Done.");
+  };
+
   const saveInfoOnStorage = async (key, value) => {
     try {
       const jsonValue = JSON.stringify(value);
@@ -112,9 +122,12 @@ export default function App() {
 
   const pushAndSave = async (key, value) => {
     const valueList = (await getInfoFromStorage(key)) ?? [];
+    if (valueList.length >= 50) {
+      valueList.pop();
+    }
     valueList.push(value);
-    console.log(valueList);
     saveInfoOnStorage(key, valueList);
+    console.log(key, valueList);
   };
 
   const saveInfoDateTime = async (key, value) => {
@@ -135,13 +148,27 @@ export default function App() {
   }, [seconds]);
 
   useEffect(() => {
-    if (intervalFrequency > 5) setShortBlinkInterval(true);
-    else setShortBlinkInterval(false);
-    if (blinkDurationCount > 5) setLongBlinkDuration(true);
-    else setLongBlinkDuration(false);
-
-    if (intervalFrequency > 5 && blinkDurationCount > 5) setSleepDetected(true);
-    else setSleepDetected(false);
+    // When short blink interval is detected
+    if (intervalFrequency > 5) {
+      if (!shortBlinkInterval) saveInfoDateTime("ShortBlinkInterval");
+      setShortBlinkInterval(true);
+    } else {
+      setShortBlinkInterval(false);
+    }
+    // When long blink duration is detected
+    if (blinkDurationCount > 5) {
+      if (!longBlinkDuration) saveInfoDateTime("LongBlinkDuration");
+      setLongBlinkDuration(true);
+    } else {
+      setLongBlinkDuration(false);
+    }
+    //When short blink interval and long blink duration is detected
+    if (intervalFrequency > 5 && blinkDurationCount > 5) {
+      if (!sleepDetected) saveInfoDateTime("Sleep");
+      setSleepDetected(true);
+    } else {
+      setSleepDetected(false);
+    }
   }, [intervalFrequency, blinkDurationCount]);
 
   useEffect(() => {
@@ -248,10 +275,11 @@ export default function App() {
           }
           if (!numbnessDetected) initCountDown();
         } else {
-          cancelCountDown();
           if (countDownStarted) {
-            setBlinkDuration(seconds - blinkDurationStart);
-            if (seconds - blinkDurationStart > blinkDurationAboveAcceptable) {
+            const blinkDur = seconds - blinkDurationStart;
+            setBlinkDuration(blinkDur);
+            saveInfoDateTime("Blink", blinkDur);
+            if (blinkDur > blinkDurationAboveAcceptable) {
               setBlinkDurationCount(
                 (blinkDurationCount) => blinkDurationCount + 1
               );
@@ -259,6 +287,7 @@ export default function App() {
               setBlinkDurationCount(0);
             }
           }
+          cancelCountDown();
         }
       } else {
         setFaceDetected(false);
