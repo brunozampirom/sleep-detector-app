@@ -6,21 +6,21 @@ import {
   TouchableOpacity,
   AppState,
   Dimensions,
+  ActivityIndicator,
 } from "react-native";
 import { Camera } from "expo-camera";
 import * as FaceDetector from "expo-face-detector";
 // import AreaMarker from "./components/AreaMarker";
 import FaceAreaMarker from "../../components/FaceAreaMarker";
 import { Audio } from "expo-av";
-import { StatusBar } from "expo-status-bar";
 import { MaterialIcons } from "@expo/vector-icons";
-import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import moment from "moment";
 
 const alarm = require("../../../assets/audio/alarm-clock.mp3");
 
-export default function AnalysisScreen() {
+export default function AnalysisScreen({ navigation, route }) {
+  const [loading, setLoading] = useState(true);
   const [hasPermission, setHasPermission] = useState(null); // Permission to access camera
   const [faceDetected, setFaceDetected] = useState(false); // Is face detected
   const [config, setConfig] = useState(true); // show information on screen
@@ -71,7 +71,7 @@ export default function AnalysisScreen() {
       appState.current.match(/inactive|background/) &&
       nextAppState === "active"
     ) {
-      alert("App has come to the foreground!");
+      navigation.navigate("Initial");
     }
 
     appState.current = nextAppState;
@@ -317,6 +317,7 @@ export default function AnalysisScreen() {
     if (faceDetected) {
       return "#039903";
     }
+    return "#000000";
   };
 
   const getStatusText = () => {
@@ -330,9 +331,30 @@ export default function AnalysisScreen() {
     return "Awake";
   };
 
+  const getTimerFormatted = () => {
+    return `${(seconds / 60).toFixed() < 10 ? "0" : ""}${(
+      seconds / 60
+    ).toFixed()}:${
+      (seconds.toFixed() % 60).toString().length === 1 ? "0" : ""
+    }${seconds.toFixed() % 60}`;
+  };
+
+  if (seconds < 1)
+    return (
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "white",
+        }}
+      >
+        <ActivityIndicator size="large" color="gray" />
+      </View>
+    );
+
   return (
     <View style={{ ...styles.container }}>
-      <StatusBar style="inverted" backgroundColor={"black"} />
       <Camera
         ratio={"16:9"}
         style={styles.camera}
@@ -348,8 +370,29 @@ export default function AnalysisScreen() {
           tracking: true,
         }}
       >
-        <View style={[styles.statusBox, { backgroundColor: getStatusColor() }]}>
-          <Text style={styles.text}>{getStatusText()}</Text>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-around",
+            paddingHorizontal: 5,
+            top: 25,
+          }}
+        >
+          <TouchableOpacity
+            style={{ paddingHorizontal: 10 }}
+            onPress={() => navigation.navigate("Initial")}
+          >
+            <MaterialIcons name="arrow-back-ios" size={34} color="white" />
+          </TouchableOpacity>
+          <View
+            style={{ ...styles.statusBox, backgroundColor: getStatusColor() }}
+          >
+            <Text style={styles.text}>{getStatusText()}</Text>
+          </View>
+          <View style={{ ...styles.timerBox }}>
+            <Text style={styles.text}>{getTimerFormatted()}</Text>
+          </View>
         </View>
         {config && (
           <View style={styles.faceInfoBox}>
@@ -413,7 +456,7 @@ export default function AnalysisScreen() {
           >
             <MaterialIcons
               style={styles.icon}
-              name="settings"
+              name="timeline"
               size={40}
               color="white"
             />
@@ -453,10 +496,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "black",
-    paddingTop: Constants.statusBarHeight,
+    paddingTop: 10,
+    paddingBottom: 10,
   },
   camera: {
-    borderRadius: 30,
     flex: 1,
   },
   buttonContainer: {
@@ -479,15 +522,21 @@ const styles = StyleSheet.create({
     borderRadius: 50,
   },
   statusBox: {
-    backgroundColor: "black",
-    position: "absolute",
-    width: "65%",
+    width: 250,
     alignSelf: "center",
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "center",
     height: 40,
-    top: 25,
+    borderRadius: 20,
+  },
+  timerBox: {
+    width: 70,
+    backgroundColor: "red",
+    alignSelf: "center",
+    justifyContent: "space-around",
+    alignItems: "center",
+    height: 40,
     borderRadius: 20,
   },
   faceInfoBox: {
