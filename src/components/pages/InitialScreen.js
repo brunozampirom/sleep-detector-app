@@ -7,7 +7,6 @@ import {
   Dimensions,
   TextInput,
 } from "react-native";
-import Constants from "expo-constants";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 const driverIllustration = require("../../../assets/img/driver-illustration_gray.png");
@@ -20,7 +19,7 @@ export default function InitialScreen({ navigation }) {
   };
 
   const onPressStart = () => {
-    if (verifyName()) return navigation.navigate("Analysis", { name });
+    if (verifyName()) return navigation.navigate("Analysis", name);
     return alert("Please enter a name");
   };
 
@@ -28,7 +27,7 @@ export default function InitialScreen({ navigation }) {
     <View
       style={{
         flex: 1,
-        paddingTop: Constants.statusBarHeight + 10,
+        paddingTop: 20,
         backgroundColor: "#D0D3D4",
       }}
     >
@@ -38,9 +37,22 @@ export default function InitialScreen({ navigation }) {
       >
         <Text
           style={{
+            fontSize: 13,
+            textAlign: "center",
+            fontWeight: "bold",
+            letterSpacing: 1.5,
+            color: "white",
+          }}
+        >
+          Sleep Detector
+        </Text>
+        <Text
+          style={{
             marginTop: 60,
             fontSize: 40,
             textAlign: "center",
+            fontWeight: "300",
+            letterSpacing: 1.2,
             color: "white",
           }}
         >
@@ -62,7 +74,7 @@ export default function InitialScreen({ navigation }) {
             width: Dimensions.get("window").width * 0.8,
             paddingVertical: 20,
             paddingHorizontal: 28,
-            fontSize: 18,
+            fontSize: 16,
             borderRadius: 50,
           }}
         />
@@ -92,8 +104,8 @@ export default function InitialScreen({ navigation }) {
           </TouchableOpacity>
           <TouchableOpacity
             style={{
-              height: 60,
-              width: 150,
+              height: 55,
+              width: 140,
               borderRadius: 50,
               backgroundColor: "black",
               alignItems: "center",
@@ -104,7 +116,7 @@ export default function InitialScreen({ navigation }) {
             <Text
               style={{
                 alignSelf: "center",
-                fontSize: 20,
+                fontSize: 18,
                 textAlign: "center",
                 color: "white",
               }}
