@@ -61,7 +61,7 @@ export default function InitialScreen({ navigation }) {
         <Image
           source={driverIllustration}
           resizeMode={"contain"}
-          style={{ height: 250, width: Dimensions.get("window").width * 1.2 }}
+          style={{ height: 250, width: Dimensions.get("window").width * 1.15 }}
         />
         <TextInput
           placeholder="Name"
@@ -69,10 +69,10 @@ export default function InitialScreen({ navigation }) {
           value={name}
           onChangeText={setName}
           style={{
-            marginVertical: 20,
+            marginTop: 22,
             backgroundColor: "white",
             width: Dimensions.get("window").width * 0.8,
-            paddingVertical: 20,
+            paddingVertical: 18,
             paddingHorizontal: 28,
             fontSize: 16,
             borderRadius: 50,
