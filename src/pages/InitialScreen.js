@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,7 +10,7 @@ import {
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
-const driverIllustration = require("../../../assets/img/driver-illustration_gray.png");
+const driverIllustration = require("../../assets/img/driver-illustration_gray.png");
 
 export default function InitialScreen({ navigation }) {
   const [name, setName] = useState("");
@@ -18,8 +19,15 @@ export default function InitialScreen({ navigation }) {
     return name.length > 0;
   };
 
-  const onPressStart = () => {
-    if (verifyName()) return navigation.navigate("Analysis", name);
+  const clearAllData = async () => {
+    await AsyncStorage.clear();
+  };
+
+  const onPressStart = async () => {
+    if (verifyName()) {
+      await clearAllData();
+      return navigation.navigate("Analysis", { name });
+    }
     return alert("Please enter a name");
   };
 

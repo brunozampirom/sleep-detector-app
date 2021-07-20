@@ -7,20 +7,22 @@ import {
   AppState,
   Dimensions,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Camera } from "expo-camera";
 import * as FaceDetector from "expo-face-detector";
 // import AreaMarker from "./components/AreaMarker";
-import FaceAreaMarker from "../../components/FaceAreaMarker";
+import FaceAreaMarker from "../components/FaceAreaMarker";
 import { Audio } from "expo-av";
 import { MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import moment from "moment";
+import { sendEmail } from "../utils/functions";
 
-const alarm = require("../../../assets/audio/alarm-clock.mp3");
+const alarm = require("../../assets/audio/alarm-clock.mp3");
 
 export default function AnalysisScreen({ navigation, route }) {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [hasPermission, setHasPermission] = useState(null); // Permission to access camera
   const [faceDetected, setFaceDetected] = useState(false); // Is face detected
   const [config, setConfig] = useState(true); // show information on screen
@@ -131,7 +133,7 @@ export default function AnalysisScreen({ navigation, route }) {
   };
 
   const saveInfoDateTime = async (key, value) => {
-    const timestamp = moment();
+    const timestamp = moment().utc().local().format("YYYY-MM-DD HH:mm:ss");
     const valueObject = value ? { value, timestamp } : { timestamp };
     pushAndSave(key, valueObject);
   };
@@ -339,7 +341,42 @@ export default function AnalysisScreen({ navigation, route }) {
     }${seconds.toFixed() % 60}`;
   };
 
-  if (seconds < 1)
+  const finishAlert = async () => {
+    setLoading(true);
+
+    const Blink = await getInfoFromStorage("Blink");
+    const ShortBlinkInterval = await getInfoFromStorage("ShortBlinkInterval");
+    const LongBlinkDuration = await getInfoFromStorage("LongBlinkDuration");
+    const Sleep = await getInfoFromStorage("Sleep");
+
+    Alert.alert(
+      "Finish!",
+      "Do you want to send an email with the statistics?",
+      [
+        {
+          text: "Sim",
+          onPress: () =>
+            sendEmail(
+              "158788@upf.br",
+              `Stats from ${route.params?.name}`,
+              JSON.stringify({
+                "-> Blink": Blink,
+                "-> ShortBlinkInterval": ShortBlinkInterval,
+                "-> LongBlinkDuration": LongBlinkDuration,
+                "-> Sleep": Sleep,
+              })
+            ),
+        },
+        {
+          text: "Não",
+          onPress: () => navigation.goBack(),
+          style: "cancel",
+        },
+      ]
+    );
+  };
+
+  if (seconds < 1 || loading)
     return (
       <View
         style={{
@@ -381,7 +418,7 @@ export default function AnalysisScreen({ navigation, route }) {
         >
           <TouchableOpacity
             style={{ paddingHorizontal: 10 }}
-            onPress={() => navigation.navigate("Initial")}
+            onPress={() => navigation.goBack()}
           >
             <MaterialIcons name="arrow-back-ios" size={34} color="white" />
           </TouchableOpacity>
@@ -461,14 +498,18 @@ export default function AnalysisScreen({ navigation, route }) {
               color="white"
             />
           </TouchableOpacity>
-          <View style={styles.icon} opacity={sleepDetected ? 1 : 0}>
+          {/* <View style={styles.icon} opacity={sleepDetected ? 1 : 0}>
             <Text
               style={{ color: "white", width: 150, textAlign: "center" }}
               numberOfLines={2}
             >
               It's recommended to stop driving
             </Text>
-          </View>
+          </View> */}
+          <TouchableOpacity
+            style={styles.finishButton}
+            onPress={finishAlert}
+          ></TouchableOpacity>
           <TouchableOpacity
             style={styles.button}
             onPress={() => {
@@ -504,17 +545,28 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     position: "absolute",
-    bottom: 30,
+    bottom: 0,
     left: 0,
     right: 0,
+    paddingBottom: 30,
+    paddingTop: 10,
     backgroundColor: "transparent",
     flexDirection: "row",
     justifyContent: "space-around",
-    alignItems: "center",
+    alignItems: "flex-end",
   },
   button: {
     flex: 0.3,
     alignItems: "center",
+  },
+  finishButton: {
+    backgroundColor: "#3C6A84",
+    marginHorizontal: 20,
+    borderWidth: 3,
+    borderColor: "#FFFF",
+    height: 80,
+    width: 80,
+    borderRadius: 80,
   },
   icon: {
     padding: 10,
