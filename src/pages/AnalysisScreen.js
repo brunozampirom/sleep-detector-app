@@ -397,7 +397,7 @@ export default function AnalysisScreen({ navigation, route }) {
         style={styles.camera}
         type={type}
         autoFocus
-        useCamera2Api
+        // useCamera2Api
         faceDetectorEnabled
         onFacesDetected={handleFacesDetected}
         faceDetectorSettings={{
@@ -506,10 +506,7 @@ export default function AnalysisScreen({ navigation, route }) {
               It's recommended to stop driving
             </Text>
           </View> */}
-          <TouchableOpacity
-            style={styles.finishButton}
-            onPress={finishAlert}
-          ></TouchableOpacity>
+          <TouchableOpacity style={styles.finishButton} onPress={finishAlert} />
           <TouchableOpacity
             style={styles.button}
             onPress={() => {

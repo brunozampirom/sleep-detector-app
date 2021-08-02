@@ -31,6 +31,11 @@ export default function InitialScreen({ navigation }) {
     return alert("Please enter a name");
   };
 
+  const onPressSkip = async () => {
+    await clearAllData();
+    return navigation.navigate("Analysis");
+  };
+
   return (
     <View
       style={{
@@ -80,8 +85,8 @@ export default function InitialScreen({ navigation }) {
             marginTop: 22,
             backgroundColor: "white",
             width: Dimensions.get("window").width * 0.8,
-            paddingVertical: 18,
-            paddingHorizontal: 28,
+            paddingVertical: 16,
+            paddingHorizontal: 26,
             fontSize: 16,
             borderRadius: 50,
           }}
@@ -96,7 +101,7 @@ export default function InitialScreen({ navigation }) {
             alignItems: "flex-end",
           }}
         >
-          <TouchableOpacity onPress={() => navigation.navigate("Analysis")}>
+          <TouchableOpacity onPress={onPressSkip}>
             <Text
               style={{
                 marginBottom: 15,
