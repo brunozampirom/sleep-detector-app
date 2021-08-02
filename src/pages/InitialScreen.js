@@ -20,7 +20,11 @@ export default function InitialScreen({ navigation }) {
   };
 
   const clearAllData = async () => {
-    await AsyncStorage.clear();
+    try {
+      await AsyncStorage.clear();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const onPressStart = async () => {

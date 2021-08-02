@@ -1,4 +1,4 @@
-import qs from "qs";
+import queryString from "query-string";
 import { Linking } from "react-native";
 
 export async function sendEmail(to, subject, body, options = {}) {
@@ -7,7 +7,7 @@ export async function sendEmail(to, subject, body, options = {}) {
   let url = `mailto:${to}`;
 
   // Create email link query
-  const query = qs.stringify({
+  const query = queryString.stringify({
     subject: subject,
     body: body,
     // cc: cc,
