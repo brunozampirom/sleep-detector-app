@@ -1,7 +1,7 @@
 import React from "react";
 import { View } from "react-native";
 
-export default AreaMarker = ({ faceProps }) => {
+export default function AreaMarker({ faceProps }) {
   if (!faceProps) return <></>;
   return (
     <View
@@ -20,4 +20,4 @@ export default AreaMarker = ({ faceProps }) => {
       }}
     />
   );
-};
+}

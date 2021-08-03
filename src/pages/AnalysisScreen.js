@@ -53,12 +53,15 @@ export default function AnalysisScreen({ navigation, route }) {
   const appState = useRef(AppState.currentState);
   const [appStateVisible, setAppStateVisible] = useState(appState.current);
 
+  const height = Dimensions.get("window").height;
+  const width = Dimensions.get("window").width;
+
   const openEyeSleep = 0.9;
   const openEyeSleepSeconds = 1.5;
   const blinkIntervalBelowAcceptable = 3;
   const blinkDurationAboveAcceptable = 0.2;
-  const faceUpperSizeLimit = Dimensions.get("window").width * 0.85;
-  const faceLowerSizeLimit = Dimensions.get("window").width * 0.4;
+  const faceUpperSizeLimit = width * 0.85;
+  const faceLowerSizeLimit = width * 0.4;
 
   useEffect(() => {
     AppState.addEventListener("change", _handleAppStateChange);
@@ -391,19 +394,19 @@ export default function AnalysisScreen({ navigation, route }) {
     );
 
   return (
-    <View style={{ ...styles.container }}>
+    <View style={{ ...styles.container, height }}>
       <Camera
         ratio={"16:9"}
         style={styles.camera}
         type={type}
-        autoFocus
+        // autoFocus={FaceDetector.Constants.AutoFocus?.on}
         // useCamera2Api
         faceDetectorEnabled
         onFacesDetected={handleFacesDetected}
         faceDetectorSettings={{
-          mode: FaceDetector.Constants.Mode.fast,
-          detectLandmarks: FaceDetector.Constants.Landmarks.none,
-          runClassifications: FaceDetector.Constants.Classifications.all,
+          mode: FaceDetector.Constants.Mode?.fast,
+          detectLandmarks: FaceDetector.Constants.Landmarks?.none,
+          runClassifications: FaceDetector.Constants.Classifications?.all,
           tracking: true,
         }}
       >
