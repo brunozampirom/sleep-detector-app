@@ -16,6 +16,7 @@
     "expo-av": "~9.2.3",
     "expo-camera": "~11.2.2",
     "expo-face-detector": "~10.1.1",
+    "expo-keep-awake": "~9.2.0",
     "expo-status-bar": "~1.0.4",
     "moment": "^2.29.1",
     "query-string": "^7.0.1",

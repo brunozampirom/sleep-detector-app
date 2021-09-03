@@ -18,6 +18,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import moment from "moment";
 import { sendEmail } from "../utils/functions";
+import { useKeepAwake } from "expo-keep-awake";
 
 const alarm = require("../../assets/audio/alarm-clock.mp3");
 
@@ -62,6 +63,9 @@ export default function AnalysisScreen({ navigation, route }) {
   const blinkDurationAboveAcceptable = 0.2;
   const faceUpperSizeLimit = width * 0.85;
   const faceLowerSizeLimit = width * 0.4;
+
+  // Função para previnir dispositivo entrar em modo hibernar
+  useKeepAwake();
 
   useEffect(() => {
     AppState.addEventListener("change", _handleAppStateChange);
@@ -399,8 +403,9 @@ export default function AnalysisScreen({ navigation, route }) {
         ratio={"16:9"}
         style={styles.camera}
         type={type}
-        // autoFocus={FaceDetector.Constants.AutoFocus?.on}
         // useCamera2Api
+        autoFocus={FaceDetector.Constants.AutoFocus?.on}
+        whiteBalance={Camera.Constants.WhiteBalance?.auto}
         faceDetectorEnabled
         onFacesDetected={handleFacesDetected}
         faceDetectorSettings={{
