@@ -1,9 +1,8 @@
 {
-  "main": "node_modules/expo/AppEntry.js",
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "start": "react-native start",
+    "android": "react-native run-android",
+    "ios": "react-native run-ios",
     "web": "expo start --web",
     "eject": "expo eject"
   },
@@ -17,21 +16,27 @@
     "expo-camera": "~11.2.2",
     "expo-face-detector": "~10.1.1",
     "expo-keep-awake": "~9.2.0",
+    "expo-splash-screen": "~0.11.2",
     "expo-status-bar": "~1.0.4",
+    "expo-updates": "~0.8.1",
     "moment": "^2.29.1",
     "query-string": "^7.0.1",
     "react": "16.13.1",
     "react-dom": "16.13.1",
-    "react-native": "https://github.com/expo/react-native/archive/sdk-42.0.0.tar.gz",
+    "react-native": "~0.63.4",
+    "react-native-android-pip": "^1.0.1",
     "react-native-gesture-handler": "~1.10.2",
     "react-native-keyboard-aware-scroll-view": "^0.9.4",
     "react-native-reanimated": "~2.2.0",
     "react-native-safe-area-context": "3.2.0",
     "react-native-screens": "~3.4.0",
+    "react-native-unimodules": "~0.14.5",
     "react-native-web": "~0.13.12"
   },
   "devDependencies": {
     "@babel/core": "~7.9.0"
   },
-  "private": true
+  "private": true,
+  "name": "sleep-detector",
+  "version": "1.0.0"
 }

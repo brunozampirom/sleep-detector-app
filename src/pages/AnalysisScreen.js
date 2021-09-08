@@ -19,6 +19,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import moment from "moment";
 import { sendEmail } from "../utils/functions";
 import { useKeepAwake } from "expo-keep-awake";
+import AndroidPip from "react-native-android-pip";
 
 const alarm = require("../../assets/audio/alarm-clock.mp3");
 
@@ -80,7 +81,7 @@ export default function AnalysisScreen({ navigation, route }) {
       appState.current.match(/inactive|background/) &&
       nextAppState === "active"
     ) {
-      navigation.navigate("Initial");
+      // navigation.navigate("Initial");
     }
 
     appState.current = nextAppState;
@@ -396,6 +397,8 @@ export default function AnalysisScreen({ navigation, route }) {
         <ActivityIndicator size="large" color="gray" />
       </View>
     );
+
+  AndroidPip.enterPictureInPictureMode();
 
   return (
     <View style={{ ...styles.container, height }}>
