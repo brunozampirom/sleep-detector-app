@@ -209,6 +209,23 @@ export default function AnalysisScreen({ navigation, route }) {
     return <Text>No access to camera</Text>;
   }
 
+  const onAreaMarked = (bounds) => {
+    const origin = bounds?.origin;
+    const size = bounds?.size;
+    const left = origin.x;
+    const right = origin.x + size.width;
+    const top = origin.y;
+    const bottom = origin.y + size.height;
+    setFaceProps({
+      height: size.height,
+      width: size.width,
+      left,
+      right,
+      top,
+      bottom,
+    });
+  };
+
   const initCountDown = () => {
     setCountDownStarted(true);
     if (countDownSeconds === 0) {
@@ -245,6 +262,7 @@ export default function AnalysisScreen({ navigation, route }) {
     setTimer((timer) => timer + 1);
     if (props?.faces?.length > 0) {
       if (verifyFaceSize(props?.faces[0]?.bounds)) {
+        onAreaMarked(props?.faces[0]?.bounds);
         setFaceDetected(true);
         const face = props.faces[0];
 
