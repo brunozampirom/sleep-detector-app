@@ -21,6 +21,7 @@ import { sendEmail } from "../utils/functions";
 import { useKeepAwake } from "expo-keep-awake";
 
 const alarm = require("../../assets/audio/alarm-clock.mp3");
+const alert = require("../../assets/audio/alert.mp3");
 
 export default function AnalysisScreen({ navigation, route }) {
   const [loading, setLoading] = useState(false);
@@ -46,7 +47,8 @@ export default function AnalysisScreen({ navigation, route }) {
   const [intervalFrequency, setIntervalFrequency] = useState(0); // frequency of blink interval less then blinkIntervalBelowAcceptable
   const [shortBlinkInterval, setShortBlinkInterval] = useState(false);
   const [type, setType] = useState(Camera.Constants.Type.front); // type of camera (front or back)
-  const [sound, setSound] = useState(undefined); // alert sound
+  const [alarmSound, setAlarmSound] = useState(undefined); // alert alarmSound
+  const [alertSound, setAlertSound] = useState(undefined); // alert alarmSound
   const [faceProps, setFaceProps] = useState(); // face measures
   const [faceSizeBigger, setFaceSizeBig] = useState(false); // if face size is bigger than limit
   const [faceSizeSmaller, setFaceSizeSmaller] = useState(false); // if face size is smaller than limit
@@ -61,8 +63,8 @@ export default function AnalysisScreen({ navigation, route }) {
   const openEyeSleepSeconds = 1.5;
   const blinkIntervalBelowAcceptable = 3;
   const blinkDurationAboveAcceptable = 0.2;
-  const faceUpperSizeLimit = width * 0.85;
-  const faceLowerSizeLimit = width * 0.4;
+  const faceUpperSizeLimit = width;
+  const faceLowerSizeLimit = width * 0.3;
 
   // Função para previnir dispositivo entrar em modo hibernar
   useKeepAwake();
@@ -87,18 +89,27 @@ export default function AnalysisScreen({ navigation, route }) {
     setAppStateVisible(appState.current);
   };
 
-  const stopSound = async () => {
-    if (sound) await sound.stopAsync();
+  const stopAlarm = async () => {
+    if (alarmSound) await alarmSound.stopAsync();
   };
 
-  const playSound = async () => {
+  const playAlarm = async () => {
     console.log("Loading Sound");
-    if (sound === undefined) {
+    if (alarmSound === undefined) {
       const { sound } = await Audio.Sound.createAsync(alarm);
-      setSound(sound);
+      setAlarmSound(sound);
       sound.setIsLoopingAsync(true);
       await sound.playAsync();
-    } else await sound.replayAsync();
+    } else await alarmSound.replayAsync();
+  };
+
+  const playAlert = async () => {
+    console.log("Loading Sound");
+    if (alertSound === undefined) {
+      const { sound } = await Audio.Sound.createAsync(alert);
+      setAlertSound(sound);
+      await sound.playAsync();
+    } else await alertSound.replayAsync();
   };
 
   const removeInfoOnStorage = async (key) => {
@@ -146,6 +157,10 @@ export default function AnalysisScreen({ navigation, route }) {
   };
 
   useEffect(() => {
+    if (sleepDetected) playAlert();
+  }, [sleepDetected]);
+
+  useEffect(() => {
     (async () => {
       const { status } = await Camera.requestPermissionsAsync();
       setHasPermission(status === "granted");
@@ -158,21 +173,21 @@ export default function AnalysisScreen({ navigation, route }) {
 
   useEffect(() => {
     // When short blink interval is detected
-    if (intervalFrequency > 5) {
+    if (intervalFrequency > 3) {
       if (!shortBlinkInterval) saveInfoDateTime("ShortBlinkInterval");
       setShortBlinkInterval(true);
     } else {
       setShortBlinkInterval(false);
     }
     // When long blink duration is detected
-    if (blinkDurationCount > 5) {
+    if (blinkDurationCount > 3) {
       if (!longBlinkDuration) saveInfoDateTime("LongBlinkDuration");
       setLongBlinkDuration(true);
     } else {
       setLongBlinkDuration(false);
     }
     //When short blink interval and long blink duration is detected
-    if (intervalFrequency > 5 && blinkDurationCount > 5) {
+    if (intervalFrequency > 3 && blinkDurationCount > 3) {
       if (!sleepDetected) saveInfoDateTime("Sleep");
       setSleepDetected(true);
     } else {
@@ -199,7 +214,7 @@ export default function AnalysisScreen({ navigation, route }) {
     if (countDownSeconds === 0) {
       setCountDownSeconds(seconds);
     } else if (seconds > countDownSeconds + openEyeSleepSeconds) {
-      playSound();
+      playAlarm();
       seNumbnessDetected(true);
       saveInfoDateTime("Numbness");
     }
@@ -209,35 +224,7 @@ export default function AnalysisScreen({ navigation, route }) {
     setCountDownStarted(false);
     seNumbnessDetected(false);
     setCountDownSeconds(0);
-    stopSound();
-  };
-
-  const onAreaMarked = (bounds) => {
-    const origin = bounds?.origin;
-    const size = bounds?.size;
-    const left = origin.x;
-    const right = origin.x + size.width;
-    const top = origin.y;
-    const bottom = origin.y + size.height;
-    // console.log(
-    //   `left: ${left.toFixed(2)} / right: ${right.toFixed(2)}\n
-    //   top: ${top.toFixed(2)} / bottom: ${bottom.toFixed(2)}`
-    // );
-    setFaceProps({
-      height: size.height,
-      width: size.width,
-      left,
-      right,
-      top,
-      bottom,
-    });
-    // return (
-    //   left > (Dimensions.get("window").width - 300) / 2 &&
-    //   top > (Dimensions.get("window").height - 450) / 2 &&
-    //   right < Dimensions.get("window").width / 2 + 300 / 2 &&
-    //   bottom < Dimensions.get("window").height / 2 + 450 / 2
-    // );
-    return true;
+    stopAlarm();
   };
 
   const verifyFaceSize = (bounds) => {
@@ -256,12 +243,11 @@ export default function AnalysisScreen({ navigation, route }) {
 
   const handleFacesDetected = (props) => {
     setTimer((timer) => timer + 1);
-    if (props?.faces?.length > 0 && onAreaMarked(props?.faces[0]?.bounds)) {
+    if (props?.faces?.length > 0) {
       if (verifyFaceSize(props?.faces[0]?.bounds)) {
         setFaceDetected(true);
         const face = props.faces[0];
-        // console.log(face);
-        // verifyMonth(face);
+
         setLeftEyeOpenProbability(face?.leftEyeOpenProbability);
         setRightEyeOpenProbabilityy(face?.rightEyeOpenProbability);
         if (
